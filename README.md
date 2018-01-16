@@ -34,3 +34,8 @@ https://github.com/apoelstra/rust-secp256k1
 
 For num256 crate , https://github.com/althea-mesh/althea_rs
 
+Limitation:
+---
+Ethereum Address is derived from public key, hashing it and limiting its length to 40 characters. This has not been achieved 
+because secp256k1(signing) returns a byte more, this difference would be researched and resolved. 
+
