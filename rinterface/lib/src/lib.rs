@@ -15,9 +15,9 @@ extern crate serde_derive;
 
 
 
-use secp256k1::{Secp256k1 , Message};
+use secp256k1::{Secp256k1, Message};
 use std::str;
-use multihash::{encode, decode, Hash,to_hex};
+use multihash::{encode, decode, Hash, to_hex};
 use num256::Int256;
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
@@ -39,7 +39,7 @@ pub struct ResSigs {
     sig2: String,
     pubkey: String,
     msg_hash1: String,
-    msg_hash2: String
+    msg_hash2: String,
 }
 
 
@@ -72,24 +72,29 @@ pub fn sign_and_hash(fnm256: Int256, snm256: Int256) {
 
     let fnm256_str = serde_json::to_string(&fnm256).unwrap();
     let snm256_vec = serde_json::to_vec(&snm256).unwrap();
-    
+
     let secp = Secp256k1::new();
     let (sk, pk) = secp.generate_keypair(&mut thread_rng()).unwrap();
-    
-    let prefix = format!("{}{}{}","\x19Ethereum Signed Message:\n", fnm256_str.len(), fnm256_str );
+
+    let prefix = format!(
+        "{}{}{}",
+        "\x19Ethereum Signed Message:\n",
+        fnm256_str.len(),
+        fnm256_str
+    );
     let hash1 = encode(Hash::SHA3256, &prefix.as_bytes()).unwrap();
     let hash2 = encode(Hash::SHA3256, &snm256_vec).unwrap();
-    
+
     let msg1 = Message::from_slice(&hash1[2..]).unwrap();
     let msg2 = Message::from_slice(&hash2[2..]).unwrap();
-    
+
     let sig1 = secp.sign_recoverable(&msg1, &sk).unwrap();
     let sig2 = secp.sign_recoverable(&msg2, &sk).unwrap();
-    
+
     let (recid1, vec1) = sig1.serialize_compact(&secp);
     let (recid2, vec2) = sig2.serialize_compact(&secp);
     //let fnm256_str = to_hex(&vectt);
-    
+
     let sign1_hex = format!("{}0{}", to_hex(&vec1), recid1.to_i32());
     let sign2_hex = format!("{}0{}", to_hex(&vec2), recid2.to_i32());
 
@@ -101,12 +106,12 @@ pub fn sign_and_hash(fnm256: Int256, snm256: Int256) {
         pubkey: to_hex(&hashed_pub_key[14..]),
         msg_hash1: to_hex(&hash1[2..]),
         msg_hash2: to_hex(&hash2[2..]),
-    };   
+    };
 
     let payload = serde_json::to_string(&tstr).unwrap();
     println!("{}", &payload);
 
-//0x135a7de83802408321b74c322f8558db1679ac20"
+    //0x135a7de83802408321b74c322f8558db1679ac20"
     transport(payload);
 
 }
