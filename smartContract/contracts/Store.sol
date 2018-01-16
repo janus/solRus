@@ -1,16 +1,13 @@
 pragma solidity ^0.4.13;
 
-contract SmartContract {
-	uint myVariable;
+contract Store {
 
+    function recoverAddr(bytes32 msgHash, uint8 v, bytes32 r, bytes32 s) returns (address) {
+        return ecrecover(msgHash, v, r, s);
+    }
 
-	function set(uint x) public {
-		myVariable = x;
-	}
-
-
-	function get() constant public returns (uint) {
-		return myVariable;
-	}
+    function isSigned(address _addr, bytes32 msgHash, uint8 v, bytes32 r, bytes32 s) returns (bool) {
+        return ecrecover(msgHash, v, r, s) == _addr;
+}
 
 }

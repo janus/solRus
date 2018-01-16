@@ -8,3 +8,4 @@ const Stores = artifacts.require("../contracts/Store.sol");
   const instance = await Stores.deployed();
   startCal(test, instance);
 })();
+
