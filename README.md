@@ -26,16 +26,22 @@ Setup:
 
 NOTE:
 ---
-secp256k1 and num256 crates are in a special folder. You would need to clone via git.
+ethey and num256 crates are in a special folder. You would need to clone via git.
 
-For more information on secp256k1 , https://github.com/apoelstra/rust-secp256k1/tree/master/depend/secp256k1
+For more information on parity , https://github.com/paritytech/parity
 
-https://github.com/apoelstra/rust-secp256k1
+ethkey setup:
+----
+1. cd into lib (inside Rust source code)
+2. mkdir repo
+3. cd repo
+4. git clone https://github.com/paritytech/parity.git
+5. cd into parity
+6. cargo build -p ethkey-cli --release
+7. ./target/release/ethkey --help  [optional]
+
 
 For num256 crate , https://github.com/althea-mesh/althea_rs
 
-Limitation:
----
-Ethereum Address is derived from public key, hashing it and limiting its length to 40 characters. This has not been achieved 
-because secp256k1(signing) returns a byte more, this difference would be researched and resolved. 
+
 
