@@ -1,5 +1,5 @@
 
-module.exports = {fetchData, getData, verifySign};
+module.exports = {fetchData, getData, verifySign1, verifySign2};
 
 var netData;
 
@@ -50,9 +50,8 @@ async function getData() {
     return netData;
 }
 
-function verifySign(resData, instance) {
+function verifySign1(resData, instance) {
     const hex_msg_1 = '0x' + resData.msg_hash1;
-    const hex_msg_2 = '0x' + resData.msg_hash2;
     
     //signature 1
     const sign1 = resData.sig1;
@@ -61,7 +60,15 @@ function verifySign(resData, instance) {
     const v1 = sign1.slice(128, 130);
     //console.log(sign1.length);
     const v_decimal_1 = 27 + parseInt(v1) ; // parseInt(v1);
+
+    return instance.recoverAddr.call(hex_msg_1, v_decimal_1, r1,s1);
+}
+
+
+function verifySign2(resData, instance) {
+    const hex_msg_2 = '0x' + resData.msg_hash2;
     
+
     //signature 2
     const sign2 = resData.sig2;
     const r2 = '0x' + sign2.slice(0, 64);
@@ -69,13 +76,10 @@ function verifySign(resData, instance) {
     const v2 = sign2.slice(128, 130);
     const v_decimal_2 = 27 + parseInt(v2);
     
-    console.log(r1);
-    console.log(s1);
-    console.log(v_decimal_1);
-    console.log(hex_msg_1);
-    console.log(resData.pubkey);
-    return instance.recoverAddr.call(hex_msg_1, v_decimal_1, r1,s1);
+
+    return instance.recoverAddr.call(hex_msg_2, v_decimal_2, r2,s2);
 }
+
 
 
 function errorHandler(status) {

@@ -10,16 +10,11 @@ description = "Rust Solidity Exchange POC"
 serde = "1.0.24"
 serde_derive = "1.0.24"
 serde_json = "1.0.8"
-num = "*"
 num256 = {path = "../lib/repo/althea_rs/num256" }
 jsonrpc-core = "8.0.1"
 jsonrpc-http-server = "8.0.0"
 multihash = "*"
-rand = "0.3"
-
-[dependencies.secp256k1]
-path = "../lib/repo/rust-secp256k1"
-features = ["rand", "serde"]
+ethkey = {path = "../lib/repo/parity/ethkey" }
 
 
 
