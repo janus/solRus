@@ -5,14 +5,13 @@ extern crate jsonrpc_core;
 extern crate jsonrpc_http_server;
 extern crate multihash;
 extern crate ethkey;
+extern crate rustc_hex;
 
 
 
 
 #[macro_use]
 extern crate serde_derive;
-
-
 
 //use secp256k1::{Secp256k1, Message};
 use std::str;
@@ -23,6 +22,9 @@ use serde::{Deserialize, Deserializer, Serializer};
 use ethkey::{KeyPair, Secret, sign};
 use ethkey::Message;
 use std::str::FromStr;
+use std::vec;
+use rustc_hex::{FromHex, ToHex};
+
 
 
 use jsonrpc_core::*;
@@ -37,18 +39,17 @@ pub struct TwoInt256 {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResSigs {
-    sig1: String,
-    sig2: String,
+    sig: String,
     address: String,
-    msg_hash1: String,
-    msg_hash2: String,
+    num1: String,
+    num2: String,
 }
 
 
-fn transport(message: String) {
+fn transport(message: Vec<serde_json::Value>) {
     let mut io = IoHandler::new();
     io.add_method("say_hello", move |_: Params| {
-        Ok(Value::String(message.clone()))
+        Ok(Value::Array(message.clone()))
     });
 
     let _server = ServerBuilder::new(io)
@@ -72,46 +73,66 @@ fn transport(message: String) {
 // sign them, then put them into the solidity which verifies the signature.
 
 pub fn sign_and_hash(fnm256: Int256, snm256: Int256, open_secret: &str) {
+     
+    let pad = "0000000000000000000000000000000000000000000000000000000000000000";
+    let num_size = 64;
+    
+    //made the below to return hex
+    //impl fmt::Display for Int256 {
+    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    //    write!(f, "{}", &self.to_str_radix(16))
+    //}
+	//}
+	
+	//The next 6 lines would go want i get better way of padding
 
-    let fnm256_str = serde_json::to_string(&fnm256).unwrap();
-    let snm256_vec = serde_json::to_vec(&snm256).unwrap();
+    let fnm256_str =  format!("{}", &fnm256);
+	let snm256_str =  format!("{}", &snm256);
 
+    let fnm256_str_len = fnm256_str.len();
+    let snm256_str_len2 = snm256_str.len() ;
+
+
+	let pad_1 = &pad[..num_size - fnm256_str_len];
+	let pad_2 = &pad[..num_size - snm256_str_len2];
+	let hex =  format!("{}{}{}{}", pad_1, &fnm256, pad_2, &snm256);
+
+   
+	let fnm256_str = serde_json::to_string(&fnm256).unwrap();
+	let snm256_str = serde_json::to_string(&snm256).unwrap();
+		
     let secret = Secret::from_str(open_secret).unwrap();
     let keypair = KeyPair::from_secret(secret).unwrap();
+    
+    
+    //let hex = "00000000000000000000000000000000000000000000000000000000000000ea000000000000000000000000000000000000000000000000000000000000014d";
+    let bytes = hex.from_hex().unwrap();
 
-    let prefix = format!(
-        "{}{}{}",
-        "\x19Ethereum Signed Message:\n",
-        fnm256_str.len(),
-        fnm256_str
-    );
+    let msg_fhash = encode(Hash::Keccak256, &bytes).unwrap();
+    
 
-    let hash1 = encode(Hash::SHA3256, &prefix.as_bytes()).unwrap();
-    let hash2 = encode(Hash::SHA3256, &snm256_vec).unwrap();
+    let msg = Message::from_slice(&msg_fhash[2..]);
 
-    let msg1 = Message::from_slice(&hash1[2..]);
-    let msg2 = Message::from_slice(&hash2[2..]);
-
-    let sign1 = sign(keypair.secret(), &msg1).unwrap();
-    let sign2 = sign(keypair.secret(), &msg2).unwrap();
-
-    let sign1_hex = format!("{}", sign1);
-    let sign2_hex = format!("{}", sign2);
+    let sign = sign(keypair.secret(), &msg).unwrap();
+    let sign1_hex = format!("{}", sign);
     let addr = format!("{:?}", keypair.address());
 
 
     let tstr = ResSigs {
-        sig1: sign1_hex,
-        sig2: sign2_hex,
+        sig: sign1_hex,
         address: addr,
-        msg_hash1: to_hex(&hash1[2..]),
-        msg_hash2: to_hex(&hash2[2..]),
+        num1: fnm256_str,
+        num2: snm256_str,
     };
 
-    let payload = serde_json::to_string(&tstr).unwrap();
+    let payload= serde_json::to_string(&tstr).unwrap();
     println!("{}", &payload);
+    
+    let payload_value = serde_json::Value::String(payload);
 
-    transport(payload);
+    let payload_vec = vec!(payload_value);
+    
+    transport(payload_vec);
 
 }
 

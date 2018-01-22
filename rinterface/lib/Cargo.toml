@@ -7,6 +7,7 @@ description = "Rust Solidity Exchange POC"
 
 
 [dependencies]
+base64 = "0.6.0"
 serde = "1.0.24"
 serde_derive = "1.0.24"
 serde_json = "1.0.8"
@@ -14,6 +15,7 @@ num256 = {path = "../lib/repo/althea_rs/num256" }
 jsonrpc-core = "8.0.1"
 jsonrpc-http-server = "8.0.0"
 multihash = "*"
+rustc-hex = "1.0.0"
 ethkey = {path = "../lib/repo/parity/ethkey" }
 
 
