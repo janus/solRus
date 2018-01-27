@@ -1,16 +1,12 @@
-const p = require("util").promisify;
-//const BN = require("bn.js");
-//const bn = require("bignumber.js");
-//const leftPad = require("left-pad");
+//onst p = require("util").promisify;
 
 const Web3 = require('web3');
 
 const web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:3030"));
 
 
-module.exports = {fetchData, getData, verifySign1, verifySign2};
-
-var netData;
+module.exports = {fetchData, verifySign1, verifySign2};
+const URL = 'http://127.0.0.1:3030/';
 
 function makeAjaxCall(url, methodType) {
     var promiseObj = new Promise(function (resolve, reject) {
@@ -25,7 +21,7 @@ function makeAjaxCall(url, methodType) {
         xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
              if (xhr.status === 200) {
-                resolve(xhr.responseText);
+                return resolve(xhr.responseText);
              } else {
                 reject(xhr.status);
              }
@@ -42,21 +38,16 @@ function makeAjaxCall(url, methodType) {
 
 
 async function fetchData() {
-    var URL = 'http://127.0.0.1:3030/';
-    await makeAjaxCall(URL, 'POST').then(processResponse, errorHandler);
+    var rtnData = await makeAjaxCall(URL, 'POST').then(processResponse, errorHandler);
+    return rtnData;
 }
 
 function processResponse(responseData) {
     var respJson = JSON.parse(responseData);
     var resData = JSON.parse(respJson.result);
-    console.log(resData);
-    netData = resData;
-    
+    return resData;  
 }
 
-async function getData() {
-    return netData;
-}
 
 function verifySign1(resData, instance) {
     const  lenNum1 = resData.num1.length;
