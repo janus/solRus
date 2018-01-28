@@ -69,14 +69,9 @@ fn transport(message: Vec<serde_json::Value>) {
 }
 
 
-
-
-//Have the rust program serialize two `num256::Int256`'s, hash them,
-// sign them, then put them into the solidity which verifies the signature.
-
-pub fn sign_and_hash(fnm256: Int256, snm256: Int256, open_secret: &str) {
-
-    let num_size = 64; //the number of (assci) characters to have same signature as Web3
+fn int256_to_padded_hex(fnm256: &Int256, snm256: &Int256) -> String {
+	
+	let num_size = 64; //the number of (assci) characters to have same signature as Web3
     //The number 64 is just the number of characters in Int256 when converted to hex
 
     //made the below to return hex
@@ -86,20 +81,24 @@ pub fn sign_and_hash(fnm256: Int256, snm256: Int256, open_secret: &str) {
     //}
     //}
 
-    //Converts to hex and added padding to align with Web3
-    let padded_fnm256_str = format!("{}", &fnm256).pad(num_size, '0', Alignment::Right, true);
-    let padded_snm256_str = format!("{}", &snm256).pad(num_size, '0', Alignment::Right, true);
+	//Converts to hex and added padding to align with Web3
+    let padded_fnm256_str = format!("{}", fnm256).pad(num_size, '0', Alignment::Right, true);
+    let padded_snm256_str = format!("{}", snm256).pad(num_size, '0', Alignment::Right, true);
+	format!("{}{}", padded_fnm256_str, padded_snm256_str)
+}
 
-    let secret = Secret::from_str(open_secret).unwrap();
-    let keypair = KeyPair::from_secret(secret).unwrap();
-    let bytes = format!("{}{}", padded_fnm256_str, padded_snm256_str).from_hex().unwrap();
 
+//Have the rust program serialize two `num256::Int256`'s, hash them,
+// sign them, then put them into the solidity which verifies the signature.
+pub fn sign_and_hash(fnm256: Int256, snm256: Int256, secret: &ethkey::Secret, address: &ethkey::Address) {
+
+    let bytes = int256_to_padded_hex(&fnm256, &snm256).from_hex().unwrap();
     let msg_fhash = encode(Hash::Keccak256, &bytes).unwrap();
     let msg = Message::from_slice(&msg_fhash[2..]);
 
     let tstr = ResSigs {
-        sig: format!("{}", sign(keypair.secret(), &msg).unwrap()),
-        address: format!("{:?}", keypair.address()),
+        sig: format!("{}", sign(secret, &msg).unwrap()),
+        address: format!("{:?}", address),
         num1: serde_json::to_string(&fnm256).unwrap(),
         num2: serde_json::to_string(&snm256).unwrap(),
     };
@@ -110,17 +109,16 @@ pub fn sign_and_hash(fnm256: Int256, snm256: Int256, open_secret: &str) {
     transport(vec![serde_json::Value::String(payload)]);
 }
 
+
 pub fn generate_two_int256(j_str: &str) -> TwoInt256 {
     let tmp: TwoInt256 = serde_json::from_str(j_str).unwrap();
     tmp
 }
 
-pub fn fn_sha256(open_secret: &str) {
+pub fn fn_sha256(secret: &ethkey::Secret, address: &ethkey::Address) {
 
     let val_int256s = generate_two_int256("{\"int1\":\"234\",\"int2\":\"333\"}");
-
-
-    sign_and_hash(val_int256s.int1, val_int256s.int2, open_secret);
+    sign_and_hash(val_int256s.int1, val_int256s.int2, secret, address);
 
 }
 
@@ -131,7 +129,9 @@ mod tests {
     #[test]
     fn test_transport() {
         let open_secret = "a100df7a048e50ed308ea696dc600215098141cb391e9527329df289f9383f65";
-
-        fn_sha256(open_secret);
+		
+		let secret = Secret::from_str(open_secret).unwrap();
+		let keypair = KeyPair::from_secret(secret).unwrap();
+        fn_sha256(&keypair.secret(), &keypair.address() );
     }
 }
