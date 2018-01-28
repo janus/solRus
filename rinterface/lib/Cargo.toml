@@ -18,5 +18,6 @@ multihash = "*"
 rustc-hex = "1.0.0"
 ethkey = {path = "../lib/repo/parity/ethkey" }
 
+pad = {git = "https://github.com/ogham/rust-pad.git"}
 
 
