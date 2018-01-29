@@ -3,7 +3,7 @@ extern crate jsonrpc_core;
 extern crate jsonrpc_http_server;
 extern crate multihash;
 extern crate num256;
-extern crate pad;
+//extern crate pad;
 extern crate rustc_hex;
 extern crate serde;
 extern crate serde_json;
@@ -12,10 +12,10 @@ extern crate serde_json;
 extern crate serde_derive;
 
 //use secp256k1::{Secp256k1, Message};
-use pad::{Alignment, PadStr};
+//use pad::{Alignment, PadStr};
 use std::str;
 use multihash::{encode, to_hex, Hash};
-use num256::Int256;
+use num256::{Int256, PaddedHex};
 use serde::ser::Serialize;
 use serde::{Deserialize, Deserializer, Serializer};
 use ethkey::{sign, KeyPair, Secret};
@@ -62,25 +62,13 @@ fn transport(message: Vec<serde_json::Value>) {
 }
 
 fn int256_to_padded_hex(fnm256: &Int256, snm256: &Int256) -> String {
-    let num_size = 64; //the number of (assci) characters to have same signature as Web3
-                       //The number 64 is just the number of characters in Int256 when converted to hex
 
-    //made the below to return hex
-    //impl fmt::Display for Int256 {
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    //    write!(f, "{}", &self.to_str_radix(16))
-    //}
-    //}
-
-    //Converts to hex and added padding to align with Web3
-    let padded_fnm256_str = format!("{}", fnm256).pad(num_size, '0', Alignment::Right, true);
-    let padded_snm256_str = format!("{}", snm256).pad(num_size, '0', Alignment::Right, true);
-    format!("{}{}", padded_fnm256_str, padded_snm256_str)
+    format!("{}{}", fnm256.to_padded_hex(), snm256.to_padded_hex())
 }
 
 //Have the rust program serialize two `num256::Int256`'s, hash them,
 // sign them, then put them into the solidity which verifies the signature.
-pub fn sign_and_hash(
+pub fn hash_and_sign(
     fnm256: Int256,
     snm256: Int256,
     secret: &ethkey::Secret,
@@ -89,7 +77,7 @@ pub fn sign_and_hash(
     let bytes = int256_to_padded_hex(&fnm256, &snm256).from_hex().unwrap();
     let msg_fhash = encode(Hash::Keccak256, &bytes).unwrap();
     let msg = Message::from_slice(&msg_fhash[2..]);
-
+    
     let tstr = ResSigs {
         sig: format!("{}", sign(secret, &msg).unwrap()),
         address: format!("{:?}", address),
@@ -110,7 +98,7 @@ pub fn generate_two_int256(j_str: &str) -> TwoInt256 {
 
 pub fn fn_sha256(secret: &ethkey::Secret, address: &ethkey::Address) {
     let val_int256s = generate_two_int256("{\"int1\":\"234\",\"int2\":\"333\"}");
-    sign_and_hash(val_int256s.int1, val_int256s.int2, secret, address);
+    hash_and_sign(val_int256s.int1, val_int256s.int2, secret, address);
 }
 
 #[cfg(test)]
