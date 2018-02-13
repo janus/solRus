@@ -13,20 +13,20 @@ Requirements:
 
 Setup:
 ----
-1. testrpc (on a different console)
+1. testrpc (on a different console) or npm run testrpc
 2. Clone repo
 3. cd into lib
 4. cargo test -- --nocapture
 5. cd into smartContract
 6. npm install
-7. truffle compile
-8. truffle migrate (or truffle migrate --reset)
-9. truffle test
+7. truffle compile or npm run compile
+8. truffle migrate (or truffle migrate --reset) or npm run migrate
+9. truffle test or npm run test
 
 
 NOTE:
 ---
-ethey and num256 crates are in a special folder. You would need to clone via git.
+ethkey and num256 crates are in a special folder. You would need to clone via git.
 
 For more information on parity , https://github.com/paritytech/parity
 
