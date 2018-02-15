@@ -14,11 +14,10 @@
     "blue-tape": "^1.0.0",
     "eslint": "^4.1.1",
     "left-pad": "^1.1.3",
-    "truffle": "^4.0.4",
+    "truffle": "^4.0.6",
     "prettier": "^1.5.3"
   },
   "scripts": {
-    "compile": "truffle compile",
     "test": "truffle test",
     "migrate": "truffle migrate --reset",
     "testrpc": "testrpc",
