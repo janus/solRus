@@ -5,23 +5,27 @@ Proof Of Concept that Rust signed message can be verfied by Solidity  smart cont
 
 Requirements:
 ----
-1. Truffle 3.2.1 or greater globally installed
+1. Truffle 4.0.6 or greater globally installed
 2. EthereumJS TestRPC v4.0.1  or greater
-3. Node 4 or greater
-4. npm 3 or greater
+3. Node 8 or greater
+4. npm 5.6.0 or greater
 5. rustc 1.22.1 or greater
 
 Setup:
 ----
-1. testrpc (on a different console) or npm run testrpc
+Recommended (just run the script)
+sudo ./solrus.sh
+
+However, one can go through the steps one by one.
+1. truffle develop
 2. Clone repo
 3. cd into lib
 4. cargo test -- --nocapture
 5. cd into smartContract
 6. npm install
-7. truffle compile or npm run compile
-8. truffle migrate (or truffle migrate --reset) or npm run migrate
-9. truffle test or npm run test
+7. truffle migrate (or truffle migrate --reset) or npm run migrate
+8. truffle test or npm run test
+
 
 
 NOTE:
