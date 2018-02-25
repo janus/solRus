@@ -14,16 +14,17 @@ Requirements:
 Setup:
 ----
 Recommended (just run the script)
+
 sudo ./solrus.sh
 
 However, one can go through the steps one by one.
-1. truffle develop
-2. Clone repo
+1. testrpc
+2. clone repo
 3. cd into lib
 4. cargo test -- --nocapture
 5. cd into smartContract
 6. npm install
-7. truffle migrate (or truffle migrate --reset) or npm run migrate
+7. truffle migrate --reset or npm run migrate
 8. truffle test or npm run test
 
 
