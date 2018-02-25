@@ -24,6 +24,10 @@ contract PaymentChannels is ECVerify, ETHWallet {
     mapping (bytes32 => Channel) public channels;
     mapping (bytes32 => bool) seenPreimage;
 
+	function channeldd (bytes32 channelId) returns(Channel){
+        return channels[channelId];
+    }
+    
     function channelDoesNotExist (bytes32 _channelId) {
         require(channels[_channelId].channelId != _channelId);
     }
@@ -74,14 +78,6 @@ contract PaymentChannels is ECVerify, ETHWallet {
         require(ecverify(_fingerprint, _signature, _address));
     }
 
-    function signedBys (
-        bytes32 _fingerprint,
-        bytes _signature,
-        address _address
-    ) returns (bool){
-        return ecverify(_fingerprint, _signature, _address);
-    }
-    
     function signedByBoth (
         bytes32 _fingerprint,
         bytes _signature0,
@@ -95,17 +91,6 @@ contract PaymentChannels is ECVerify, ETHWallet {
         );
     }
 
-    function signedByBoths (
-        bytes32 _fingerprint,
-        bytes _signature0,
-        bytes _signature1,
-        address _address0,
-        address _address1
-    ) returns (bool){
-            return ecverify(_fingerprint, _signature0, _address0) &&
-            ecverify(_fingerprint, _signature1, _address1);
-    }
-
     function signedByOne (
         bytes32 _fingerprint,
         bytes _signature,
@@ -117,29 +102,11 @@ contract PaymentChannels is ECVerify, ETHWallet {
             ecverify(_fingerprint, _signature, _address1)
         );
     }
-
-    function signedByOnes (
-        bytes32 _fingerprint,
-        bytes _signature,
-        address _address0,
-        address _address1
-    ) returns (bool){
-        return
-            ecverify(_fingerprint, _signature, _address0) ||
-            ecverify(_fingerprint, _signature, _address1);
+  
+    function incrementBal(address _addr, uint _value) {
+        ethBalances[_addr] = ethBalances[_addr].add(_value);
     }
-
-	//Added for testing purposes
-    function recoverAddr(bytes32 msgHash, uint8 v, bytes32 r, bytes32 s) returns (address) {
-        return ecrecover(msgHash, v, r, s);
-    }
-
-	//Added for testing purposes
-    function isSigned(address _addr, int256 num1, int256 num2 , uint8 v, bytes32 r, bytes32 s) returns (bool) {
-        bytes32 msgHash = keccak256(num1, num2);
-       return ecrecover(msgHash, v, r, s) == _addr;
-	}
-
+    
     function incrementBalance(address _addr, uint _value)
         internal
     {
@@ -151,6 +118,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
     {
         ethBalances[_addr] = ethBalances[_addr].sub(_value);
     }
+    
 
     function newChannel(
         bytes32 _channelId,
@@ -167,7 +135,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
         bytes _signature1
     ) {
         channelDoesNotExist(_channelId);
-        bytes32 fingerprint = sha3(
+        bytes32 fingerprint = keccak256(
             "newChannel",
             _channelId,
 
@@ -208,6 +176,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
             false                        // bool closed;
 
         );
+        
     }
 
     function updateState(
@@ -222,12 +191,13 @@ contract PaymentChannels is ECVerify, ETHWallet {
         bytes _signature0,
         bytes _signature1
     ) {
+
         channelExists(_channelId);
         channelIsNotSettled(_channelId);
         channelIsNotClosed(_channelId);
         sequenceNumberIsHighest(_channelId, _sequenceNumber);
 
-        bytes32 fingerprint = sha3(
+        bytes32 fingerprint = keccak256(
             "updateState",
             _channelId,
             _sequenceNumber,
@@ -235,7 +205,6 @@ contract PaymentChannels is ECVerify, ETHWallet {
             _balance1,
             _hashlocks
         );
-
         signedByBoth(
             fingerprint,
             _signature0,
@@ -244,6 +213,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
             channels[_channelId].address1
         );
 
+    
         updateStateInternal(
             _channelId,
             _sequenceNumber,
@@ -253,6 +223,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
 
             _hashlocks
         );
+        
     }
 
     function updateStateInternal (
@@ -289,7 +260,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
     ) {
         channelSettlingPeriodStarted(_channelId);
 
-        bytes32 fingerprint = sha3(
+        bytes32 fingerprint = keccak256(
             "updateStateWithBounty",
             _channelId,
             _sequenceNumber,
@@ -324,7 +295,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
         bytes32 _hashed,
         bytes32 _preimage
     ) {
-        require(_hashed == sha3(_preimage));
+        require(_hashed == keccak256(_preimage));
         seenPreimage[_hashed] = true;
     }
 
@@ -354,7 +325,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
         channelExists(_channelId);
         channelSettlingPeriodNotStarted(_channelId);
 
-        bytes32 fingerprint = sha3(
+        bytes32 fingerprint = keccak256(
             "startSettlingPeriod",
             _channelId
         );
@@ -374,10 +345,15 @@ contract PaymentChannels is ECVerify, ETHWallet {
         bytes32 _channelId
     ) {
         channelExists(_channelId);
+        
         channelIsSettled(_channelId);
+        //return _channelId;
         channelIsNotClosed(_channelId);
-
+        
+		
         closeChannelInternal(_channelId);
+        
+        
     }
 
     function closeChannelFast (
@@ -395,7 +371,7 @@ contract PaymentChannels is ECVerify, ETHWallet {
         sequenceNumberIsHighest(_channelId, _sequenceNumber);
         balancesEqualTotal(_channelId, _balance0, _balance1);
 
-        bytes32 fingerprint = sha3(
+        bytes32 fingerprint = keccak256(
             "closeChannelFast",
             _channelId,
             _sequenceNumber,
