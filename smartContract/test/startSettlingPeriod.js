@@ -9,6 +9,7 @@ const {
   revertSnapshot,
   getData,
   getSettlingData,
+  getSpData,
   createChannel,
   updateState,
   startSettlingPeriod
@@ -17,17 +18,17 @@ const {
 module.exports = async (test, instance) => {
   test("startSettlingPeriod nonexistant channel", async t => {
     const snapshot = await takeSnapshot();
-    const data = await getData(14);
-    const data1 = await getSettlingData(14);
+    const data = await getData(1);
+    const data1 = await getSettlingData(1);
 
     await createChannel(instance, data);
 
     await t.shouldFail(
       instance.updateState(
         "0x" + data1.chl_id_wg,
-        "0x" + data1.seq_num,
-        "0x" + data1.bal_0,
-        "0x" + data1.bal_1,
+        data1.seq_num,
+        data1.bal_0,
+        data1.bal_1,
         "0x",
         data1.sig_0,
         data1.sig_1
@@ -39,8 +40,8 @@ module.exports = async (test, instance) => {
 
   test("startSettlingPeriod already started", async t => {
     const snapshot = await takeSnapshot();
-    const data = await getData(11);
-    const data1 = await getSettlingData(11);
+    const data = await getData(1);
+    const data1 = await getSettlingData(1);
 
     await createChannel(instance, data);
     await updateState(instance, data1, "0x");
@@ -52,8 +53,8 @@ module.exports = async (test, instance) => {
 
   test("startSettlingPeriod bad sig", async t => {
     const snapshot = await takeSnapshot();
-    const data = await getData(12);
-    const data1 = await getSettlingData(12);
+    const data = await getData(1);
+    const data1 = await getSettlingData(1);
 
     await createChannel(instance, data);
     await updateState(instance, data1, "0x");
@@ -67,8 +68,8 @@ module.exports = async (test, instance) => {
 
   test("startSettlingPeriod wrong private key", async t => {
     const snapshot = await takeSnapshot();
-    const data = await getData(13);
-    const data1 = await getSettlingData(13);
+    const data = await getData(1);
+    const data1 = await getSettlingData(1);
 
     await createChannel(instance, data);
     await updateState(instance, data1, "0x");
