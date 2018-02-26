@@ -6,13 +6,6 @@ const Web3 = require("web3");
 
 const wb3 = new Web3(new Web3.providers.HttpProvider("http://localhost:3030"));
 
-const {
-  ACCT_0_PRIVKEY,
-  ACCT_0_ADDR,
-  ACCT_1_PRIVKEY,
-  ACCT_1_ADDR
-} = require("./constants.js");
-
 module.exports = {
   sleep,
   extUint256,
@@ -200,20 +193,20 @@ function filterLogs(logs) {
 }
 
 async function createChannel(instance, data) {
-  await instance.depositToAddress.sendTransaction(data.address_0, {
+  await instance.depositToAddress.sendTransaction(data.addr_0, {
     value: 22000
   });
-  await instance.depositToAddress.sendTransaction(data.address_1, {
+  await instance.depositToAddress.sendTransaction(data.addr_1, {
     value: 22000
   });
 
   await instance.newChannel(
     "0x" + data.chl_id,
-    data.address_0,
-    data.address_1,
-    "0x" + data.bal_0,
-    "0x" + data.bal_1,
-    "0x" + data.set_period_ln,
+    data.addr_0,
+    data.addr_1,
+    data.bal_0,
+    data.bal_1,
+    data.set_period_ln,
     data.sig_0,
     data.sig_1
   );
@@ -222,9 +215,9 @@ async function createChannel(instance, data) {
 async function updateState(instance, data, hashlocks) {
   await instance.updateState(
     "0x" + data.chl_id,
-    "0x" + data.seq_num,
-    "0x" + data.bal_0,
-    "0x" + data.bal_1,
+    data.seq_num,
+    data.bal_0,
+    data.bal_1,
     hashlocks,
     data.sig_0,
     data.sig_1
@@ -240,7 +233,7 @@ async function closeChannel(instance, data, data1, hashlocks) {
   await updateState(instance, data1, hashlocks);
   await startSettlingPeriod(instance, data1);
   await mineBlocks(5);
-  await instance.closeChannel("0x" + data1.chl_id);
+  await instance.closeChannel("0x" + data.chl_id);
 }
 
 async function closeChannelWithoutNewChannel(instance, data1, hashlocks) {
@@ -254,11 +247,11 @@ async function closeChannelWithoutNewChannel(instance, data1, hashlocks) {
 async function closeChannelSp(instance, data, data1, hashlocks) {
   await instance.newChannel(
     "0x" + data.chl_id,
-    data.address_0,
-    data.address_1,
-    "0x" + data.bal_0,
-    "0x" + data.bogus_amount,
-    "0x" + data.set_period_ln,
+    data.addr_0,
+    data.addr_1,
+    data.bal_0,
+    data.bogus_amount,
+    data.set_period_ln,
     data.sig_0,
     data.sig_1
   );
