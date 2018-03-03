@@ -24,63 +24,61 @@ use jsonrpc_core::*;
 use jsonrpc_http_server::*;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct FHSigns {
-    chl_id: String,
-    sig_0: String,
-    sig_1: String,
-    bal_0: String,
-    bal_1: String,
-    total_bal: String,
-    set_period_ln: String,
-    addr_0: String,
-    addr_1: String,
-    bogus_addr: String,
-    bogus_sign: String,
+pub struct NewChannel {
+    channel_id: String,
+    sign_priv_0: String,
+    sign_priv_1: String,
+    balance_0: String,
+    balance_1: String,
+    total_balance: String,
+    settling_period_length: String,
+    address_0: String,
+    address_1: String,
+    wrong_address: String,
+    wrong_sign: String,
     bogus_amount: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UPSigns {
-    chl_id: String,
-    chl_id_wg: String,
-    sig_0: String,
-    sig_1: String,
-    sig_bogus_msg: String,
-    sig_wrong_id: String,
-    sig_start_stl_p: String,
-    sig_start_stl_wg_prv: String,
-    bal_0: String,
-    bal_1: String,
-    total_bal: String,
+pub struct StartSettlingPeriod {
+    channel_id: String,
+    bad_channel_id: String,
+    sign_wrong_msg: String,
+    sign_wrong_id: String,
+    sign_start_settling_period: String,
+    sign_start_settling_period_wrong_prv: String,
+    balance_0: String,
+    balance_1: String,
+    total_balance: String,
     seq_num: String,
-    sig_0_cl: String,
-    sig_1_cl: String,
+    sign_close_chnl_fast_priv_0: String,
+    sign_close_chnl_fast_priv_1: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SIGNBlock {
-    sign_1: String,
-    sign_2: String,
-    sign_bt: String,
-    sign_bt_bd: String,
-    sig_st_derp_1: String,
-    sig_st_derp_2: String,
-    sig_st_id_1: String,
-    sig_st_id_2: String,
-    sig_st_sqn_1: String,
-    sig_st_sqn_2: String,
-    sig_st_bl_1: String,
-    sig_st_bl_2: String,
-    sig_st_hl_1: String,
-    sig_st_hl_2: String,
+pub struct UpdateStateSigns {
+    sign_priv_0: String,
+    sign_priv_1: String,
+    bounty_sign: String,
+    bounty_sign_bad_msg: String,
+    sign_priv_0_bad_msg: String,
+    sign_priv_1_bad_msg: String,
+    sign_priv_0_wrong_id: String,
+    sign_priv_1_wrong_id: String,
+    sign_priv_0_wrong_seq_num: String,
+    sign_priv_1_wrong_seq_num: String,
+    sign_priv_0_wrong_balance: String,
+    sign_priv_1_wrong_balance: String,
+    sign_priv_0_bad_hashlocks: String,
+    sign_priv_1_bad_hashlocks: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct UPSp {
-    chl_id: String,
-    sig_0: String,
-    sig_1: String,
-    sig_start_stl_p: String,
+pub struct UpdateStateHashLocks {
+    channel_id: String,
+    update_state_sign_priv_0: String,
+    update_state_sign_priv_1: String,
+    start_settl_period_sign_priv_0: String,
 }
 
 pub fn transport(
@@ -119,12 +117,12 @@ pub fn transport(
 }
 
 pub fn hash_and_sign(secret: &ethkey::Secret, vec_str: &[&str]) -> String {
-    let mut str_vl = String::new();
-    for em in vec_str {
-        str_vl.push_str(em);
+    let mut str_val = String::new();
+    for item in vec_str {
+        str_val.push_str(item);
     }
 
-    let bytes = str_vl.from_hex().unwrap();
+    let bytes = str_val.from_hex().unwrap();
     let fingerprint = encode(Hash::Keccak256, &bytes).unwrap();
     let msg = Message::from_slice(&fingerprint[2..]);
     format!("0x{}", sign(&secret, &msg).unwrap())
@@ -134,72 +132,68 @@ pub fn hash_and_sign(secret: &ethkey::Secret, vec_str: &[&str]) -> String {
 mod tests {
     use super::*;
 
-    fn test_evm_signed_by_both(
-        chl_id: &str,
-        open_secret_0: &str,
-        open_secret_1: &str,
-    ) -> serde_json::Value {
+    fn channel(chl_id: &str, open_secret_0: &str, open_secret_1: &str) -> serde_json::Value {
         let keypair_0 = KeyPair::from_secret(Secret::from_str(open_secret_0).unwrap()).unwrap();
         let keypair_1 = KeyPair::from_secret(Secret::from_str(open_secret_1).unwrap()).unwrap();
 
         let bal_0 = Uint256::from(15000);
         let bal_1 = Uint256::from(15000);
         let total_bal = bal_1.clone() + bal_0.clone();
-        let set_period_ln = format!("0x{}", Uint256::from(2).to_padded_hex());
+        let settling_period_length = format!("0x{}", Uint256::from(2).to_padded_hex());
         let bogus_amount = format!("0x{}", Uint256::from(150000).to_padded_hex());
-        let bal_0 = format!("0x{}", bal_0.to_padded_hex());
-        let bal_1 = format!("0x{}", bal_1.to_padded_hex());
-        let total_bal = format!("0x{}", total_bal.to_padded_hex());
+        let balance_0 = format!("0x{}", bal_0.to_padded_hex());
+        let balance_1 = format!("0x{}", bal_1.to_padded_hex());
+        let total_balance = format!("0x{}", total_bal.to_padded_hex());
 
-        let bogus_addr = "0xd68ff82bd0f8afeee459e6cbbf18d753576a8fff".to_owned();
-        let bogus_sign = "0x77ffcdde8818c7f851fd5ac41fe5243684b649d5fccd4209a13f643b8c01aeb76501c656b297bcc618c274646072fe0fe3abf22af710563455b0f0f32252520400".to_owned();
+        let wrong_address = "0xd68ff82bd0f8afeee459e6cbbf18d753576a8fff".to_owned();
+        let wrong_sign = "0x77ffcdde8818c7f851fd5ac41fe5243684b649d5fccd4209a13f643b8c01aeb76501c656b297bcc618c274646072fe0fe3abf22af710563455b0f0f32252520400".to_owned();
 
-        let addr_0 = format!("0x{:?}", &keypair_0.address());
-        let addr_1 = format!("0x{:?}", &keypair_1.address());
+        let address_0 = format!("0x{:?}", &keypair_0.address());
+        let address_1 = format!("0x{:?}", &keypair_1.address());
         let new_chl = to_hex(&"newChannel".as_bytes());
 
-        let fhsigns = FHSigns {
-            chl_id: chl_id.clone().to_string(),
-            sig_0: hash_and_sign(
+        let channel = NewChannel {
+            channel_id: chl_id.clone().to_string(),
+            sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
                 &[
                     &new_chl,
                     &chl_id,
-                    &addr_0[2..],
-                    &addr_1[2..],
-                    &bal_0[2..],
-                    &bal_1[2..],
-                    &set_period_ln[2..],
+                    &address_0[2..],
+                    &address_1[2..],
+                    &balance_0[2..],
+                    &balance_1[2..],
+                    &settling_period_length[2..],
                 ],
             ),
-            sig_1: hash_and_sign(
+            sign_priv_1: hash_and_sign(
                 &keypair_1.secret(),
                 &[
                     &new_chl,
                     &chl_id,
-                    &addr_0[2..],
-                    &addr_1[2..],
-                    &bal_0[2..],
-                    &bal_1[2..],
-                    &set_period_ln[2..],
+                    &address_0[2..],
+                    &address_1[2..],
+                    &balance_0[2..],
+                    &balance_1[2..],
+                    &settling_period_length[2..],
                 ],
             ),
-            bal_0,
-            bal_1,
-            total_bal,
-            set_period_ln,
-            addr_0,
-            addr_1,
-            bogus_addr,
-            bogus_sign,
+            balance_0,
+            balance_1,
+            total_balance,
+            settling_period_length,
+            address_0,
+            address_1,
+            wrong_address,
+            wrong_sign,
             bogus_amount,
         };
 
-        let payload = serde_json::to_string(&fhsigns).unwrap();
+        let payload = serde_json::to_string(&channel).unwrap();
         serde_json::Value::String(payload)
     }
 
-    fn test_evm_update(
+    fn start_settling_period(
         chl_id: &str,
         chl_id_wg: &str,
         open_secret_0: &str,
@@ -216,46 +210,40 @@ mod tests {
         let bal_1 = format!("0x{}", bal_1.to_padded_hex());
         let total_bal = format!("0x{}", total_bal.to_padded_hex());
 
-        let update = to_hex(&"updateState".as_bytes());
         let wg_start_pd = to_hex(&"startSettlingPeriod derp".as_bytes());
         let start_pd = to_hex(&"startSettlingPeriod".as_bytes());
         let close_chl = to_hex(&"closeChannelFast".as_bytes());
 
-        let up_signs = UPSigns {
-            chl_id: chl_id.clone().to_string(),
-            chl_id_wg: chl_id_wg.clone().to_string(),
-            sig_0: hash_and_sign(
-                &keypair_0.secret(),
-                &[&update, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
-            ),
-            sig_1: hash_and_sign(
+        let start_settling = StartSettlingPeriod {
+            channel_id: chl_id.clone().to_string(),
+            bad_channel_id: chl_id_wg.clone().to_string(),
+            sign_wrong_msg: hash_and_sign(&keypair_0.secret(), &[&wg_start_pd, &chl_id]),
+            sign_wrong_id: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id_wg]),
+            sign_start_settling_period: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id]),
+            sign_start_settling_period_wrong_prv: hash_and_sign(
                 &keypair_1.secret(),
-                &[&update, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
+                &[&start_pd, &chl_id],
             ),
-            sig_bogus_msg: hash_and_sign(&keypair_0.secret(), &[&wg_start_pd, &chl_id]),
-            sig_wrong_id: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id_wg]),
-            sig_start_stl_p: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id]),
-            sig_start_stl_wg_prv: hash_and_sign(&keypair_1.secret(), &[&start_pd, &chl_id]),
 
-            bal_0: bal_0.clone(),
-            bal_1: bal_1.clone(),
-            total_bal: total_bal.clone(),
+            balance_0: bal_0.clone(),
+            balance_1: bal_1.clone(),
+            total_balance: total_bal.clone(),
             seq_num: seq_num.clone(),
-            sig_0_cl: hash_and_sign(
+            sign_close_chnl_fast_priv_0: hash_and_sign(
                 &keypair_0.secret(),
                 &[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
             ),
-            sig_1_cl: hash_and_sign(
+            sign_close_chnl_fast_priv_1: hash_and_sign(
                 &keypair_1.secret(),
                 &[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
             ),
         };
 
-        let payload = serde_json::to_string(&up_signs).unwrap();
+        let payload = serde_json::to_string(&start_settling).unwrap();
         serde_json::Value::String(payload)
     }
 
-    fn test_evm_update_sp(
+    fn update_state_hashlocks(
         chl_id: &str,
         open_secret_0: &str,
         open_secret_1: &str,
@@ -270,9 +258,9 @@ mod tests {
 
         let update_state = to_hex(&"updateState".as_bytes());
 
-        let up_signs = UPSp {
-            chl_id: chl_id.clone().to_string(),
-            sig_0: hash_and_sign(
+        let up_signs = UpdateStateHashLocks {
+            channel_id: chl_id.clone().to_string(),
+            update_state_sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
                 &[
                     &update_state,
@@ -283,7 +271,7 @@ mod tests {
                     &hash_locks,
                 ],
             ),
-            sig_1: hash_and_sign(
+            update_state_sign_priv_1: hash_and_sign(
                 &keypair_1.secret(),
                 &[
                     &update_state,
@@ -294,7 +282,7 @@ mod tests {
                     &hash_locks,
                 ],
             ),
-            sig_start_stl_p: hash_and_sign(
+            start_settl_period_sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
                 &[&to_hex(&"startSettlingPeriod".as_bytes()), &chl_id],
             ),
@@ -304,7 +292,7 @@ mod tests {
         serde_json::Value::String(payload)
     }
 
-    fn test_sign_list(
+    fn update_state_signs(
         chl_id: &str,
         chl_id_wg: &str,
         open_secret_0: &str,
@@ -328,15 +316,15 @@ mod tests {
         let update_state_wt_bnty_wg = to_hex(&"updateStateWithBounty derp".as_bytes());
         let bd_update_state = to_hex(&"updateState derp".as_bytes());
 
-        let sign_1 = hash_and_sign(
+        let sign_priv_0 = hash_and_sign(
             &keypair_0.secret(),
             &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1],
         );
-        let sign_2 = hash_and_sign(
+        let sign_priv_1 = hash_and_sign(
             &keypair_1.secret(),
             &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1],
         );
-        let sign_bt = hash_and_sign(
+        let bounty_sign = hash_and_sign(
             &keypair_0.secret(),
             &[
                 &update_state_wt_bnty,
@@ -344,12 +332,12 @@ mod tests {
                 &seq_num,
                 &bal_0,
                 &bal_1,
-                &sign_1[2..],
-                &sign_2[2..],
+                &sign_priv_0[2..],
+                &sign_priv_1[2..],
                 &bounty_amount,
             ],
         );
-        let sign_bt_bd = hash_and_sign(
+        let bounty_sign_bad_msg = hash_and_sign(
             &keypair_0.secret(),
             &[
                 &update_state_wt_bnty_wg,
@@ -357,54 +345,54 @@ mod tests {
                 &seq_num,
                 &bal_0,
                 &bal_1,
-                &sign_1[2..],
-                &sign_2[2..],
+                &sign_priv_0[2..],
+                &sign_priv_1[2..],
                 &bounty_amount,
             ],
         );
 
-        let signs = SIGNBlock {
-            sign_1,
-            sign_2,
-            sign_bt,
-            sign_bt_bd,
-            sig_st_derp_1: hash_and_sign(
+        let signs = UpdateStateSigns {
+            sign_priv_0,
+            sign_priv_1,
+            bounty_sign,
+            bounty_sign_bad_msg,
+            sign_priv_0_bad_msg: hash_and_sign(
                 &keypair_0.secret(),
                 &[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1],
             ),
-            sig_st_derp_2: hash_and_sign(
+            sign_priv_1_bad_msg: hash_and_sign(
                 &keypair_1.secret(),
                 &[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1],
             ),
-            sig_st_id_1: hash_and_sign(
+            sign_priv_0_wrong_id: hash_and_sign(
                 &keypair_0.secret(),
                 &[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1],
             ),
-            sig_st_id_2: hash_and_sign(
+            sign_priv_1_wrong_id: hash_and_sign(
                 &keypair_1.secret(),
                 &[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1],
             ),
-            sig_st_sqn_1: hash_and_sign(
+            sign_priv_0_wrong_seq_num: hash_and_sign(
                 &keypair_0.secret(),
                 &[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1],
             ),
-            sig_st_sqn_2: hash_and_sign(
+            sign_priv_1_wrong_seq_num: hash_and_sign(
                 &keypair_1.secret(),
                 &[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1],
             ),
-            sig_st_bl_1: hash_and_sign(
+            sign_priv_0_wrong_balance: hash_and_sign(
                 &keypair_0.secret(),
                 &[&update_state, &chl_id, &seq_num, &total_bal, &bal_1],
             ),
-            sig_st_bl_2: hash_and_sign(
+            sign_priv_1_wrong_balance: hash_and_sign(
                 &keypair_1.secret(),
                 &[&update_state, &chl_id, &seq_num_bg, &total_bal, &bal_1],
             ),
-            sig_st_hl_1: hash_and_sign(
+            sign_priv_0_bad_hashlocks: hash_and_sign(
                 &keypair_0.secret(),
                 &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"],
             ),
-            sig_st_hl_2: hash_and_sign(
+            sign_priv_1_bad_hashlocks: hash_and_sign(
                 &keypair_1.secret(),
                 &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"],
             ),
@@ -541,29 +529,29 @@ a4a6a83580b9611610bedb31614179330261bfd87a41347cae1c0000000000000000000000000000
 ed8e04140017aa108a0a1469249f92c8f022b9dbafa87b883ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
         let rst_data = vec![
-            test_evm_signed_by_both(chl_id_0, open_secret_0, open_secret_01),
-            test_evm_signed_by_both(chl_id_1, open_secret_1, open_secret_11),
-            test_evm_signed_by_both(chl_id_18, open_secret_18, open_secret_181),
-            test_evm_signed_by_both(chl_id_19, open_secret_19, open_secret_191),
+            channel(chl_id_0, open_secret_0, open_secret_01),
+            channel(chl_id_1, open_secret_1, open_secret_11),
+            channel(chl_id_18, open_secret_18, open_secret_181),
+            channel(chl_id_19, open_secret_19, open_secret_191),
         ];
 
         let rst_update = vec![
-            test_evm_update(chl_id_0, chl_id_lt, open_secret_0, open_secret_01),
-            test_evm_update(chl_id_1, chl_id_lt, open_secret_1, open_secret_11),
-            test_evm_update(chl_id_18, chl_id_lt, open_secret_18, open_secret_181),
-            test_evm_update(chl_id_19, chl_id_lt, open_secret_19, open_secret_191),
+            start_settling_period(chl_id_0, chl_id_lt, open_secret_0, open_secret_01),
+            start_settling_period(chl_id_1, chl_id_lt, open_secret_1, open_secret_11),
+            start_settling_period(chl_id_18, chl_id_lt, open_secret_18, open_secret_181),
+            start_settling_period(chl_id_19, chl_id_lt, open_secret_19, open_secret_191),
         ];
 
         let rst_signs = vec![
-            test_sign_list(chl_id_0, chl_id_lt, open_secret_0, open_secret_01),
-            test_sign_list(chl_id_1, chl_id_lt, open_secret_1, open_secret_11),
-            test_sign_list(chl_id_18, chl_id_lt, open_secret_18, open_secret_181),
-            test_sign_list(chl_id_19, chl_id_lt, open_secret_19, open_secret_191),
+            update_state_signs(chl_id_0, chl_id_lt, open_secret_0, open_secret_01),
+            update_state_signs(chl_id_1, chl_id_lt, open_secret_1, open_secret_11),
+            update_state_signs(chl_id_18, chl_id_lt, open_secret_18, open_secret_181),
+            update_state_signs(chl_id_19, chl_id_lt, open_secret_19, open_secret_191),
         ];
 
         let rst_update_sp = vec![
-            test_evm_update_sp(chl_id_18, open_secret_18, open_secret_181, hash_lock_sp_1),
-            test_evm_update_sp(chl_id_19, open_secret_19, open_secret_191, hash_lock_sp_2),
+            update_state_hashlocks(chl_id_18, open_secret_18, open_secret_181, hash_lock_sp_1),
+            update_state_hashlocks(chl_id_19, open_secret_19, open_secret_191, hash_lock_sp_2),
         ];
 
         transport(rst_update, rst_data, rst_signs, rst_update_sp);
