@@ -15,6 +15,7 @@ const {
   getSettlingData,
   getSignBlocks,
   getData,
+  closeChannel,
   startSettlingPeriod
 } = require("./utils.js");
 
@@ -23,34 +24,37 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(1);
     const data1 = await getSettlingData(1);
+    const signs = await getSignBlocks(1);
     const eventLog = instance.allEvents();
 
-    await instance.depositToAddress.sendTransaction(data.addr_0, {
+    await instance.depositToAddress.sendTransaction(data.address_0, {
       value: 22000
     });
-    await instance.depositToAddress.sendTransaction(data.addr_1, {
+    await instance.depositToAddress.sendTransaction(data.address_1, {
       value: 22000
     });
 
     await instance.newChannel(
-      "0x" + data.chl_id,
-      data.addr_0,
-      data.addr_1,
-      data.bal_0,
-      data.bal_1,
-      data.set_period_ln,
-      data.sig_0,
-      data.sig_1
+      "0x" + data.channel_id,
+      data.address_0,
+      data.address_1,
+      data.balance_0,
+      data.balance_1,
+      data.settling_period_length,
+      data.sign_priv_0,
+      data.sign_priv_1
     );
 
-    await updateState(instance, data1, "0x");
+    await updateState(instance, data1, signs, "0x");
 
     t.deepEqual(
-      JSON.parse(JSON.stringify(await instance.channels("0x" + data.chl_id))),
+      JSON.parse(
+        JSON.stringify(await instance.channels("0x" + data.channel_id))
+      ),
       [
-        "0x" + data.chl_id,
-        data.addr_0,
-        data.addr_1,
+        "0x" + data.channel_id,
+        data.address_0,
+        data.address_1,
         "30000",
         "17000",
         "13000",
@@ -72,7 +76,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(3);
     const data1 = await getSettlingData(3);
-    const sign1 = await getSignBlocks(1);
+    const signs = await getSignBlocks(1);
 
     let hashlocks = "0x";
 
@@ -80,13 +84,13 @@ module.exports = async (test, instance) => {
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data1.chl_id_wg,
+        "0x" + data1.bad_channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sig_2
+        signs.sign_priv_0,
+        signs.sign_priv_1
       )
     );
 
@@ -97,22 +101,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(1);
     const data1 = await getSettlingData(1);
-    const sign1 = await getSignBlocks(1);
+    const signs = await getSignBlocks(1);
 
     let hashlocks = "0x";
-    await createChannel(instance, data);
-    await startSettlingPeriod(instance, data1);
-    await mineBlocks(5);
+
+    await closeChannel(instance, data, data1, signs, hashlocks);
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_id,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sign_2
+        signs.sign_priv_0,
+        signs.sign_priv_1
       )
     );
 
@@ -123,21 +126,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(1);
     const data1 = await getSettlingData(1);
-    const sign1 = await getSignBlocks(1);
+    const signs = await getSignBlocks(1);
 
     let hashlocks = "0x";
     await createChannel(instance, data);
-    await updateState(instance, data1, "0x");
+    await updateState(instance, data1, signs, "0x");
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data1.chl_id_wg,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_sqn_1,
-        sign1.sig_st_sqn_2
+        signs.sign_priv_0_wrong_seq_num,
+        signs.sign_priv_1_wrong_seq_num
       )
     );
 
@@ -148,22 +151,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
-    //await createChannel(instance, data);
-    // already existing
+    await createChannel(instance, data);
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_derp_1,
-        sign1.sig_st_derp_2
+        signs.sign_priv_0_bad_msg,
+        signs.sign_priv_1_bad_msg
       )
     );
 
@@ -174,22 +176,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
-    //await createChannel(instance, data);
-    // already existing
+    await createChannel(instance, data);
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_id_1,
-        sign1.sig_st_id_2
+        signs.sign_priv_0_wrong_id,
+        signs.sign_priv_1_wrong_id
       )
     );
 
@@ -200,22 +201,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
     await createChannel(instance, data);
-    // already existing
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_sqn_1,
-        sign1.sig_st_sqn_2
+        signs.sign_priv_0_wrong_seq_num,
+        signs.sign_priv_1_wrong_seq_num
       )
     );
 
@@ -226,7 +226,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
@@ -234,13 +234,13 @@ module.exports = async (test, instance) => {
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_bl_1,
-        sign1.sig_st_bl_2
+        signs.sign_priv_0_wrong_balance,
+        signs.sign_priv_1_wrong_balance
       )
     );
 
@@ -251,22 +251,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
-    //await createChannel(instance, data);
-    // already existing
+    await createChannel(instance, data);
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sig_st_hl_1,
-        sign1.sig_st_hl_2
+        signs.sign_priv_0_bad_hashlocks,
+        signs.sign_priv_1_bad_hashlocks
       )
     );
 
@@ -277,22 +276,21 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
-    //await createChannel(instance, data);
-    // already existing
+    await createChannel(instance, data);
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sign_1
+        signs.sign_priv_0,
+        signs.sign_priv_0
       )
     );
 
@@ -303,7 +301,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
@@ -311,13 +309,13 @@ module.exports = async (test, instance) => {
 
     await t.shouldFail(
       instance.updateState(
-        "0x" + data.chl_di,
+        "0x" + data1.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data1.balance_0,
+        data1.balance_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sign_2
+        signs.sign_priv_1,
+        signs.sign_priv_1
       )
     );
 
@@ -328,7 +326,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(1);
     const data1 = await getSettlingData(1);
-    const sign1 = await getSignBlocks(1);
+    const signs = await getSignBlocks(1);
 
     let hashlocks = "0x";
 
@@ -336,28 +334,28 @@ module.exports = async (test, instance) => {
     await startSettlingPeriod(instance, data1);
 
     await instance.updateStateWithBounty(
-      "0x" + data1.chl_id,
+      "0x" + data1.channel_id,
       data1.seq_num,
-      data1.bal_0,
-      data1.bal_1,
+      data1.balance_0,
+      data1.balance_1,
       hashlocks,
-      sign1.sign_1,
-      sign1.sign_2,
+      signs.sign_priv_0,
+      signs.sign_priv_1,
       "0x0000000000000000000000000000000000000000000000000000000000000002",
-      sign1.sign_bt,
+      signs.bounty_sign,
       { from: web3.eth.accounts[0] }
     );
 
-    t.equal((await instance.balanceOf.call(data.addr_0)).toString(), "6998");
+    t.equal((await instance.balanceOf.call(data.address_0)).toString(), "6998");
 
     const channel = JSON.parse(
-      JSON.stringify(await instance.channels("0x" + data.chl_id))
+      JSON.stringify(await instance.channels("0x" + data.channel_id))
     );
 
     t.deepEqual(channel, [
-      "0x" + data.chl_id,
-      data.addr_0,
-      data.addr_1,
+      "0x" + data.channel_id,
+      data.address_0,
+      data.address_1,
       "30000",
       "17000",
       "13000",
@@ -376,7 +374,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(0);
     const data1 = await getSettlingData(0);
-    const sign1 = await getSignBlocks(0);
+    const signs = await getSignBlocks(0);
 
     const hashlocks = "0x";
 
@@ -384,15 +382,15 @@ module.exports = async (test, instance) => {
 
     await t.shouldFail(
       instance.updateStateWithBounty(
-        "0x" + data1.chl_id,
+        "0x" + data.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data.address_0,
+        data.address_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sign_2,
+        signs.sign_priv_0,
+        signs.sign_priv_1,
         "0x0000000000000000000000000000000000000000000000000000000000000002",
-        sign1.sign_bt,
+        signs.bounty_sign,
         { from: web3.eth.accounts[1] }
       )
     );
@@ -404,7 +402,7 @@ module.exports = async (test, instance) => {
     const snapshot = await takeSnapshot();
     const data = await getData(1);
     const data1 = await getSettlingData(1);
-    const sign1 = await getSignBlocks(1);
+    const signs = await getSignBlocks(1);
 
     const hashlocks = "0x";
 
@@ -413,15 +411,15 @@ module.exports = async (test, instance) => {
 
     await t.shouldFail(
       instance.updateStateWithBounty(
-        "0x" + data1.chl_id,
+        "0x" + data.channel_id,
         data1.seq_num,
-        data1.bal_0,
-        data1.bal_1,
+        data.address_0,
+        data.address_1,
         hashlocks,
-        sign1.sign_1,
-        sign1.sign_2,
+        signs.sign_priv_0,
+        signs.sign_priv_1,
         "0x0000000000000000000000000000000000000000000000000000000000000002",
-        sign1.sign_bt_bd,
+        signs.bounty_sign_bad_msg,
         { from: web3.eth.accounts[2] }
       )
     );
