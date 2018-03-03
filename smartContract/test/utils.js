@@ -193,71 +193,79 @@ function filterLogs(logs) {
 }
 
 async function createChannel(instance, data) {
-  await instance.depositToAddress.sendTransaction(data.addr_0, {
+  await instance.depositToAddress.sendTransaction(data.address_0, {
     value: 22000
   });
-  await instance.depositToAddress.sendTransaction(data.addr_1, {
+  await instance.depositToAddress.sendTransaction(data.address_1, {
     value: 22000
   });
 
   await instance.newChannel(
-    "0x" + data.chl_id,
-    data.addr_0,
-    data.addr_1,
-    data.bal_0,
-    data.bal_1,
-    data.set_period_ln,
-    data.sig_0,
-    data.sig_1
+    "0x" + data.channel_id,
+    data.address_0,
+    data.address_1,
+    data.balance_0,
+    data.balance_1,
+    data.settling_period_length,
+    data.sign_priv_0,
+    data.sign_priv_1
   );
 }
 
-async function updateState(instance, data, hashlocks) {
+async function updateState(instance, data, signs, hashlocks) {
   await instance.updateState(
-    "0x" + data.chl_id,
+    "0x" + data.channel_id,
     data.seq_num,
-    data.bal_0,
-    data.bal_1,
+    data.balance_0,
+    data.balance_1,
     hashlocks,
-    data.sig_0,
-    data.sig_1
+    signs.sign_priv_0,
+    signs.sign_priv_1
   );
 }
 
 async function startSettlingPeriod(instance, data) {
-  await instance.startSettlingPeriod("0x" + data.chl_id, data.sig_start_stl_p);
+  await instance.startSettlingPeriod(
+    "0x" + data.channel_id,
+    data.sign_start_settling_period
+  );
 }
 
-async function closeChannel(instance, data, data1, hashlocks) {
+async function closeChannel(instance, data, data1, signs, hashlocks) {
   await createChannel(instance, data);
-  await updateState(instance, data1, hashlocks);
+  await updateState(instance, data1, signs, hashlocks);
   await startSettlingPeriod(instance, data1);
   await mineBlocks(5);
-  await instance.closeChannel("0x" + data.chl_id);
+  await instance.closeChannel("0x" + data.channel_id);
 }
 
-async function closeChannelWithoutNewChannel(instance, data1, hashlocks) {
-  await updateState(instance, data1, hashlocks);
+async function closeChannelWithoutNewChannel(
+  instance,
+  data1,
+  signs,
+  hashlocks
+) {
+  await updateState(instance, data1, signs, hashlocks);
   await startSettlingPeriod(instance, data1);
 
   await mineBlocks(5);
-  await instance.closeChannel("0x" + data1.chl_id);
+  await instance.closeChannel("0x" + data.channel_id);
 }
 
-async function closeChannelSp(instance, data, data1, hashlocks) {
+async function closeChannelSp(instance, data, data1, signs, hashlocks) {
   await instance.newChannel(
-    "0x" + data.chl_id,
-    data.addr_0,
-    data.addr_1,
-    data.bal_0,
+    "0x" + data.channel_id,
+    data.address_0,
+    data.address_1,
+    data.balance_0,
     data.bogus_amount,
-    data.set_period_ln,
-    data.sig_0,
-    data.sig_1
+    data.settling_period_length,
+    data.sign_priv_0,
+    data.sign_priv_1
   );
 
-  await updateState(instance, data1, hashlocks);
+  await updateState(instance, data1, signs, hashlocks);
   await startSettlingPeriod(instance, data1);
   await mineBlocks(5);
-  await instance.closeChannel("0x" + data.chl_id);
+  await instance.closeChannel("0x" + data.channel_id);
 }
