@@ -8,8 +8,8 @@ extern crate serde_derive;
 
 use jsonrpc_core::*;
 use jsonrpc_http_server::*;
-use serde::ser::Serialize;
 use serde::Deserialize;
+use serde::ser::Serialize;
 use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize, Debug)]
