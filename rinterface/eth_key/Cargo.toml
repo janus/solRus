@@ -5,5 +5,4 @@ authors = ["ijanus <emekamicro@gmail.com>"]
 
 [dependencies]
 multihash = "*"
-rustc-hex = "1.0.0"
 ethkey = {path = "../lib/repo/parity/ethkey" }
