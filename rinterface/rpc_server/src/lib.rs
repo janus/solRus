@@ -9,8 +9,8 @@ extern crate serde_derive;
 use jsonrpc_core::*;
 use jsonrpc_http_server::*;
 use serde::ser::Serialize;
-use serde::{Deserialize, Deserializer, Serializer};
-use std::vec;
+use serde::Deserialize;
+use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChannelData {
@@ -18,7 +18,7 @@ pub struct ChannelData {
     pub payload: Vec<serde_json::Value>,
 }
 
-pub fn transport(msgs: Vec<ChannelData>) {
+pub fn transport(msgs: Vec<ChannelData>, sockaddr: &SocketAddr) {
     let mut io = IoHandler::new();
     for msg in msgs {
         io.add_method(&msg.group.clone(), move |_: Params| {
@@ -32,7 +32,7 @@ pub fn transport(msgs: Vec<ChannelData>) {
             AccessControlAllowOrigin::Null,
         ]))
         .rest_api(RestApi::Secure)
-        .start_http(&"127.0.0.1:3030".parse().unwrap());
+        .start_http(&sockaddr);
 
     match _server {
         Ok(server) => server.wait(),
@@ -85,6 +85,6 @@ mod tests {
 
         println!("Starting RPC_JSON server");
         let vec_data = vec![data_1, data_2, data_3, data_4];
-        transport(vec_data);
+        transport(vec_data, &"127.0.0.1:3030".parse().unwrap());
     }
 }
