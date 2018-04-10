@@ -371,6 +371,6 @@ mod tests {
 
         println!("Starting RPC_JSON server");
         let vec_data = vec![data_1, data_2, data_3, data_4];
-        transport(vec_data);
+        transport(vec_data, &"127.0.0.1:3030".parse().unwrap());
     }
 }
