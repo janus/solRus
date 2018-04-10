@@ -5,6 +5,7 @@ extern crate num256;
 extern crate rpc_server;
 extern crate serde;
 extern crate serde_json;
+extern crate rustc_hex;
 
 #[macro_use]
 extern crate serde_derive;
@@ -19,14 +20,23 @@ mod tests {
     use constants::*;
     use multihash::to_hex;
     use num256::{PaddedHex, Uint256};
-    use serde::ser::Serialize;
-    use serde::{Deserialize, Deserializer, Serializer};
+    //use serde::{Deserializer, Serializer};
     use std::str;
     use std::str::FromStr;
+    use rustc_hex::FromHex;
 
     use eth_key::hash_and_sign;
     use ethkey::{KeyPair, Secret};
     use rpc_server::{transport, ChannelData};
+    
+    fn array_of_str_to_bytes(vec_str: &[&str])->Vec<u8>{
+		let mut str_val = String::new();
+		for item in vec_str {
+			str_val.push_str(item);
+		}
+
+		str_val.from_hex().unwrap()	
+	}
 
     fn channel(chl_id: &str, open_secret_0: &str, open_secret_1: &str) -> serde_json::Value {
         let keypair_0 = KeyPair::from_secret(Secret::from_str(open_secret_0).unwrap()).unwrap();
@@ -52,7 +62,7 @@ mod tests {
             channel_id: chl_id.clone().to_string(),
             sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
-                &[
+                &array_of_str_to_bytes(&[
                     &new_chl,
                     &chl_id,
                     &address_0[2..],
@@ -60,11 +70,11 @@ mod tests {
                     &balance_0[2..],
                     &balance_1[2..],
                     &settling_period_length[2..],
-                ],
+                ]),
             ),
             sign_priv_1: hash_and_sign(
                 &keypair_1.secret(),
-                &[
+                &array_of_str_to_bytes(&[
                     &new_chl,
                     &chl_id,
                     &address_0[2..],
@@ -72,7 +82,7 @@ mod tests {
                     &balance_0[2..],
                     &balance_1[2..],
                     &settling_period_length[2..],
-                ],
+                ]),
             ),
             balance_0,
             balance_1,
@@ -113,12 +123,12 @@ mod tests {
         let start_settling = StartSettlingPeriod {
             channel_id: chl_id.clone().to_string(),
             bad_channel_id: chl_id_wg.clone().to_string(),
-            sign_wrong_msg: hash_and_sign(&keypair_0.secret(), &[&wg_start_pd, &chl_id]),
-            sign_wrong_id: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id_wg]),
-            sign_start_settling_period: hash_and_sign(&keypair_0.secret(), &[&start_pd, &chl_id]),
+            sign_wrong_msg: hash_and_sign(&keypair_0.secret(), &array_of_str_to_bytes(&[&wg_start_pd, &chl_id])),
+            sign_wrong_id: hash_and_sign(&keypair_0.secret(), &array_of_str_to_bytes(&[&start_pd, &chl_id_wg])),
+            sign_start_settling_period: hash_and_sign(&keypair_0.secret(), &array_of_str_to_bytes(&[&start_pd, &chl_id])),
             sign_start_settling_period_wrong_prv: hash_and_sign(
                 &keypair_1.secret(),
-                &[&start_pd, &chl_id],
+                &array_of_str_to_bytes(&[&start_pd, &chl_id]),
             ),
 
             balance_0: bal_0.clone(),
@@ -127,12 +137,12 @@ mod tests {
             seq_num: seq_num.clone(),
             sign_close_chnl_fast_priv_0: hash_and_sign(
                 &keypair_0.secret(),
-                &[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
+                &array_of_str_to_bytes(&[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]])
             ),
             sign_close_chnl_fast_priv_1: hash_and_sign(
                 &keypair_1.secret(),
-                &[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
-            ),
+                &array_of_str_to_bytes(&[&close_chl, &chl_id, &seq_num[2..], &bal_0[2..], &bal_1[2..]],
+            ))
         };
 
         let payload = serde_json::to_string(&start_settling).unwrap();
@@ -158,29 +168,29 @@ mod tests {
             channel_id: chl_id.clone().to_string(),
             update_state_sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
-                &[
+                &array_of_str_to_bytes(&[
                     &update_state,
                     &chl_id,
                     &seq_num,
                     &bal_0,
                     &bal_1,
                     &hash_locks,
-                ],
+                ])
             ),
             update_state_sign_priv_1: hash_and_sign(
                 &keypair_1.secret(),
-                &[
+                &array_of_str_to_bytes(&[
                     &update_state,
                     &chl_id,
                     &seq_num,
                     &bal_0,
                     &bal_1,
                     &hash_locks,
-                ],
+                ])
             ),
             start_settl_period_sign_priv_0: hash_and_sign(
                 &keypair_0.secret(),
-                &[&to_hex(&"startSettlingPeriod".as_bytes()), &chl_id],
+                &array_of_str_to_bytes(&[&to_hex(&"startSettlingPeriod".as_bytes()), &chl_id])
             ),
         };
 
@@ -214,15 +224,15 @@ mod tests {
 
         let sign_priv_0 = hash_and_sign(
             &keypair_0.secret(),
-            &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1],
+            &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num, &bal_0, &bal_1])
         );
         let sign_priv_1 = hash_and_sign(
             &keypair_1.secret(),
-            &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1],
+            &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num, &bal_0, &bal_1])
         );
         let bounty_sign = hash_and_sign(
             &keypair_0.secret(),
-            &[
+            &array_of_str_to_bytes(&[
                 &update_state_wt_bnty,
                 &chl_id,
                 &seq_num,
@@ -231,11 +241,11 @@ mod tests {
                 &sign_priv_0[2..],
                 &sign_priv_1[2..],
                 &bounty_amount,
-            ],
+            ])
         );
         let bounty_sign_bad_msg = hash_and_sign(
             &keypair_0.secret(),
-            &[
+            &array_of_str_to_bytes(&[
                 &update_state_wt_bnty_wg,
                 chl_id,
                 &seq_num,
@@ -244,7 +254,7 @@ mod tests {
                 &sign_priv_0[2..],
                 &sign_priv_1[2..],
                 &bounty_amount,
-            ],
+            ])
         );
 
         let signs = UpdateStateSigns {
@@ -254,43 +264,43 @@ mod tests {
             bounty_sign_bad_msg,
             sign_priv_0_bad_msg: hash_and_sign(
                 &keypair_0.secret(),
-                &[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1])
             ),
             sign_priv_1_bad_msg: hash_and_sign(
                 &keypair_1.secret(),
-                &[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&bd_update_state, &chl_id, &seq_num, &bal_0, &bal_1])
             ),
             sign_priv_0_wrong_id: hash_and_sign(
                 &keypair_0.secret(),
-                &[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1])
             ),
             sign_priv_1_wrong_id: hash_and_sign(
                 &keypair_1.secret(),
-                &[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id_wg, &seq_num, &bal_0, &bal_1])
             ),
             sign_priv_0_wrong_seq_num: hash_and_sign(
                 &keypair_0.secret(),
-                &[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1])
             ),
             sign_priv_1_wrong_seq_num: hash_and_sign(
                 &keypair_1.secret(),
-                &[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num_bg, &bal_0, &bal_1])
             ),
             sign_priv_0_wrong_balance: hash_and_sign(
                 &keypair_0.secret(),
-                &[&update_state, &chl_id, &seq_num, &total_bal, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num, &total_bal, &bal_1])
             ),
             sign_priv_1_wrong_balance: hash_and_sign(
                 &keypair_1.secret(),
-                &[&update_state, &chl_id, &seq_num_bg, &total_bal, &bal_1],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num_bg, &total_bal, &bal_1])
             ),
             sign_priv_0_bad_hashlocks: hash_and_sign(
                 &keypair_0.secret(),
-                &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"])
             ),
             sign_priv_1_bad_hashlocks: hash_and_sign(
                 &keypair_1.secret(),
-                &[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"],
+                &array_of_str_to_bytes(&[&update_state, &chl_id, &seq_num, &bal_0, &bal_1, "01"])
             ),
         };
 
