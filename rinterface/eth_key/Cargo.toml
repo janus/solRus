@@ -5,4 +5,4 @@ authors = ["ijanus <emekamicro@gmail.com>"]
 
 [dependencies]
 multihash = "*"
-ethkey = {path = "../lib/repo/parity/ethkey" }
+ethkey = {path = "../lib/duu/parity/ethkey"}
