@@ -21,8 +21,8 @@
     "truffle": "^4.0.4"
   },
   "scripts": {
-    "test": "truffle test",
-    "migrate": "truffle migrate --reset --compile-all",
+    "test": "sudo truffle test",
+    "migrate": "sudo truffle migrate --reset --compile-all",
     "testrpc": "testrpc",
     "prettier": "prettier --write **/**.js"
   },
