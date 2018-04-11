@@ -14,9 +14,10 @@ serde_json = "1.0.8"
 rustc-hex = "1.0.0"
 multihash = "*"
 num256 = {path = "../althea_rs/num256"}
+ethkey = {path = "../lib/duu/parity/ethkey"}
 eth_key = {path = "../eth_key"}
 rpc_server = {path = "../rpc_server"}
-ethkey = {path = "../lib/repo/parity/ethkey" }
+
 
 
 
